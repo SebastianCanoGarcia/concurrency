@@ -1,38 +1,26 @@
-// concurrency.js
-
-// Simulate fetch if running in Node.js without fetch available
-if (typeof fetch === 'undefined') {
-  global.fetch = async function (url) {
-    return {
-      text: async () => `Response for ${url}`,
-    };
-  };
-}
-
 /**
- * Runs multiple fetches with controlled max concurrency.
- * @param {string[]} urls - Array of URLs.
- * @param {number} maxConcurrency - Max number of concurrent fetches.
- * @returns {Promise<string[]>} - Array of responses in the original order.
+ * Executes an array of asynchronous tasks with controlled maximum concurrency.
+ * @param {Function[]} tasks - Array of async functions (each returns a Promise).
+ * @param {number} maxConcurrency - Maximum number of tasks running simultaneously.
+ * @returns {Promise<any[]>} - Resolves to an array of results in original task order.
  */
-async function fetchWithConcurrency(urls, maxConcurrency) {
-  const results = new Array(urls.length);
+async function runWithConcurrency(tasks, maxConcurrency) {
+  const results = new Array(tasks.length);
   let currentIndex = 0;
 
   async function worker() {
-    while (currentIndex < urls.length) {
+    while (currentIndex < tasks.length) {
       const index = currentIndex++;
       try {
-        const res = await fetch(urls[index]);
-        results[index] = await res.text();
-      } catch (e) {
+        results[index] = await tasks[index]();
+      } catch (error) {
         results[index] = null;
       }
     }
   }
 
   const workers = Array.from(
-    { length: Math.min(maxConcurrency, urls.length) },
+    { length: Math.min(maxConcurrency, tasks.length) },
     () => worker()
   );
 
@@ -40,4 +28,4 @@ async function fetchWithConcurrency(urls, maxConcurrency) {
   return results;
 }
 
-module.exports = { fetchWithConcurrency };
+module.exports = { runWithConcurrency };
