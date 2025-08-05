@@ -1,22 +1,23 @@
-// test.js
-
-// Import the function from concurrency.js
-const { fetchWithConcurrency } = require('./concurrency');
+const { runWithConcurrency } = require('./concurrency');
 
 /**
- * Runs a test to check that fetchWithConcurrency works correctly.
+ * Simulates a test for the concurrency function with async tasks.
  */
 async function runTest() {
   const urls = ['url1', 'url2', 'url3', 'url4', 'url5'];
   const maxConcurrency = 2;
 
-  // Expected simulated responses
+  // Simulated async tasks with randomized latency
+  const tasks = urls.map(url => {
+    return async () => {
+      await new Promise(resolve => setTimeout(resolve, Math.random() * 100));
+      return `Response for ${url}`;
+    };
+  });
+
   const expected = urls.map(url => `Response for ${url}`);
+  const result = await runWithConcurrency(tasks, maxConcurrency);
 
-  // Run the function
-  const result = await fetchWithConcurrency(urls, maxConcurrency);
-
-  // Verify output
   const passed = JSON.stringify(result) === JSON.stringify(expected);
 
   if (passed) {
@@ -28,7 +29,7 @@ async function runTest() {
   }
 }
 
-// Automatically run the test if executed directly
+// Run the test if this script is executed directly
 if (require.main === module) {
   runTest();
 }
